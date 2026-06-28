@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Ctrlmoney — Контроль списаний</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#050508;
+--bg1:#0c0c12;
+--bg2:#12121a;
+--bg3:#1a1a26;
+--bg4:#21212f;
+--border:rgba(255,255,255,0.07);
+--border2:rgba(255,255,255,0.13);
+--text:#f0f0f8;
+--muted:#8888a8;
+--subtle:#44445a;
+--accent:#ff6a1a;
+--accent2:#ff9a4d;
+--accent3:#ffc999;
+--orange:#e8590c;
+--orange2:#ff9f0a;
+--green:#22d3a5;
+--red:#ff4560;
+--yellow:#ffd60a;
+--blue:#38bdf8;
+--glass:rgba(255,255,255,0.03);
+--glass2:rgba(255,255,255,0.07);
+--r:14px;
+--r-sm:9px;
+--sidebar-w:230px;
+--topbar-h:56px;
+}
+
+html{height:100%;overflow:hidden}
+body{
+font-family:'Inter',system-ui,sans-serif;
+background:var(--bg);
+color:var(--text);
+-webkit-font-smoothing:antialiased;
+height:100%;
+overflow:hidden;
+}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:2px}
+
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(100px);opacity:.12;animation:orbDrift 18s ease-in-out infinite alternate}
+.orb1{width:700px;height:700px;background:radial-gradient(circle,var(--accent),transparent 70%);top:-250px;right:-150px;animation-duration:20s}
+.orb2{width:450px;height:450px;background:radial-gradient(circle,var(--blue),transparent 70%);bottom:-100px;left:-80px;animation-duration:15s;animation-delay:-6s}
+.orb3{width:350px;height:350px;background:radial-gradient(circle,var(--orange),transparent 70%);top:35%;left:50%;opacity:.07;animation-duration:22s;animation-delay:-10s}
+@keyframes orbDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,-30px) scale(1.08)}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes popIn{0%{opacity:0;transform:scale(.88)}60%{opacity:1;transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes toastIn{from{opacity:0;transform:translateX(110%)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(110%)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+@keyframes badgePop{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes dotBlip{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes successBounce{0%{transform:scale(0) rotate(-10deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+
+@media(prefers-reduced-motion:reduce){
+.orb,*{animation-duration:.001s!important;animation-iteration-count:1!important}
+}
+
+.skeleton{background:linear-gradient(90deg,var(--bg3) 0%,var(--bg4) 50%,var(--bg3) 100%);background-size:800px 100%;animation:shimmer 1.6s infinite linear;border-radius:8px}
+
+.app{
+display:flex;
+height:100vh;
+position:relative;
+z-index:1;
+animation:fadeUp .5s ease forwards;
+}
+
+.sidebar{
+width:var(--sidebar-w);
+flex-shrink:0;
+background:rgba(8,8,16,.95);
+border-right:1px solid var(--border);
+backdrop-filter:blur(24px);
+-webkit-backdrop-filter:blur(24px);
+display:flex;
+flex-direction:column;
+position:relative;
+z-index:40;
+transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+
+.logo-area{
+padding:22px 18px 18px;
+border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{
+width:36px;height:36px;border-radius:10px;
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+display:flex;align-items:center;justify-content:center;
+font-size:16px;font-weight:800;color:#fff;letter-spacing:-1px;
+box-shadow:0 4px 16px rgba(255,106,26,.4);
+position:relative;overflow:hidden;flex-shrink:0;
+}
+.logo-mark::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.25),transparent)}
+.logo-name{font-size:15px;font-weight:700;letter-spacing:-.4px}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:1px}
+
+.nav{flex:1;padding:10px 8px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.nav-section-label{font-size:9px;font-weight:700;color:var(--subtle);letter-spacing:1.4px;text-transform:uppercase;padding:14px 10px 6px}
+.nav-item{
+display:flex;align-items:center;gap:10px;
+padding:9px 10px;border-radius:10px;
+font-size:13px;font-weight:500;color:var(--muted);
+cursor:pointer;transition:all .15s ease;
+position:relative;user-select:none;
+}
+.nav-item:hover{background:var(--glass2);color:var(--text)}
+.nav-item.active{background:rgba(255,106,26,.12);color:var(--accent3)}
+.nav-item.active::before{
+content:'';position:absolute;left:-8px;top:20%;bottom:20%;
+width:3px;border-radius:0 3px 3px 0;
+background:linear-gradient(180deg,var(--accent),var(--accent2));
+}
+.nav-icon{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.nav-badge{
+margin-left:auto;background:var(--accent);color:#fff;
+font-size:10px;font-weight:700;padding:2px 6px;
+border-radius:20px;min-width:18px;text-align:center;
+animation:badgePop .3s cubic-bezier(.34,1.56,.64,1);
+}
+
+.sidebar-bottom{padding:10px 8px;border-top:1px solid var(--border)}
+.user-pill{
+display:flex;align-items:center;gap:10px;
+padding:10px;border-radius:12px;cursor:pointer;
+transition:background .15s;
+}
+.user-pill:hover{background:var(--glass2)}
+.avatar{
+width:34px;height:34px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+font-weight:700;font-size:12px;flex-shrink:0;
+position:relative;background:rgba(255,106,26,.2);color:var(--accent2);
+}
+.avatar-ring{position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--accent),var(--accent2),var(--accent));z-index:-1;animation:ringSpin 6s linear infinite}
+.user-name{font-size:13px;font-weight:600}
+.user-role{font-size:11px;color:var(--muted)}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+.topbar{
+height:var(--topbar-h);
+background:rgba(8,8,16,.85);
+backdrop-filter:blur(20px);
+-webkit-backdrop-filter:blur(20px);
+border-bottom:1px solid var(--border);
+display:flex;align-items:center;
+padding:0 20px;gap:14px;flex-shrink:0;
+}
+.topbar-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-.2px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.btn{
+display:inline-flex;align-items:center;gap:6px;
+border:none;cursor:pointer;border-radius:8px;
+font-family:'Inter',sans-serif;font-weight:500;
+transition:all .15s ease;user-select:none;
+position:relative;overflow:hidden;white-space:nowrap;
+}
+.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .2s}
+.btn:hover::after{background:rgba(255,255,255,.07)}
+.btn:active{transform:scale(.96)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn-md{padding:9px 20px;font-size:13px}
+.btn-lg{padding:12px 28px;font-size:14px;font-weight:600}
+.btn-primary{
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+color:#fff;font-weight:600;
+box-shadow:0 4px 18px rgba(255,106,26,.35);
+}
+.btn-ghost{background:var(--glass);border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-danger{background:rgba(255,69,96,.12);color:var(--red);border:1px solid rgba(255,69,96,.22)}
+.btn-success{background:rgba(34,211,165,.12);color:var(--green);border:1px solid rgba(34,211,165,.22)}
+.mob-menu{
+display:none;background:none;border:none;
+color:var(--text);font-size:22px;cursor:pointer;
+width:36px;height:36px;border-radius:8px;
+align-items:center;justify-content:center;
+transition:background .15s;
+}
+.mob-menu:hover{background:var(--glass2)}
+
+.content{flex:1;overflow-y:auto;padding:24px;-webkit-overflow-scrolling:touch}
+.page{display:none}
+.page.active{display:block;animation:fadeUp .3s cubic-bezier(.4,0,.2,1)}
+
+.glass-card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);backdrop-filter:blur(12px)}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{
+background:var(--bg2);border:1px solid var(--border);
+border-radius:var(--r);padding:18px;
+transition:border-color .2s,transform .2s;
+position:relative;overflow:hidden;
+animation:fadeUp .4s ease backwards;
+}
+.stat:hover{border-color:var(--border2);transform:translateY(-2px)}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)}
+.stat-label{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.stat-val{font-size:28px;font-weight:300;letter-spacing:-1px}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.c-accent{color:var(--accent2)}
+.c-green{color:var(--green)}
+.c-red{color:var(--red)}
+.c-yellow{color:var(--yellow)}
+.c-blue{color:var(--blue)}
+.c-orange{color:var(--orange)}
+
+.dash-chart-card{
+background:var(--bg2);border:1px solid var(--border);
+border-radius:var(--r);padding:20px;margin-bottom:20px;
+}
+.dash-chart-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.dash-chart-title{font-size:13px;font-weight:600;flex:1}
+.chart-legend{display:flex;gap:12px;flex-wrap:wrap}
+.chart-legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.chart-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;flex-shrink:0}
+.chart-tabs{display:flex;gap:4px}
+.ctab{
+padding:5px 11px;border-radius:6px;font-size:11px;font-weight:500;
+border:1px solid var(--border);background:transparent;color:var(--muted);
+cursor:pointer;transition:all .15s;
+}
+.ctab.active{background:rgba(255,106,26,.14);color:var(--accent3);border-color:rgba(255,106,26,.35)}
+
+.charts-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:20px}
+.charts-grid-3{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;animation:fadeUp .4s ease backwards}
+.chart-card-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.chart-card-sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+
+.donut-wrap{position:relative;display:flex;align-items:center;gap:18px}
+.donut-center{position:absolute;left:0;top:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut-center-val{font-size:22px;font-weight:700}
+.donut-center-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.cat-legend{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.cat-legend-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.cat-legend-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.cat-legend-name{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-legend-val{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px}
+
+.rank-list{display:flex;flex-direction:column;gap:12px}
+.rank-row{display:flex;align-items:center;gap:12px}
+.rank-num{width:20px;height:20px;border-radius:50%;background:var(--bg3);color:var(--muted);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-bar-track{height:4px;background:var(--bg3);border-radius:99px;margin-top:5px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width 1s cubic-bezier(.16,1,.3,1)}
+.rank-val{font-size:12px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+
+.heat-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.heat-cell{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.5);position:relative;cursor:default;transition:transform .15s}
+.heat-cell:hover{transform:scale(1.15);z-index:2}
+.heat-legend{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);margin-top:10px;justify-content:flex-end}
+.heat-legend-scale{display:flex;gap:2px}
+.heat-legend-scale i{width:10px;height:10px;border-radius:2px}
+
+.table-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.table-head{
+padding:16px 20px;display:flex;align-items:center;gap:12px;
+border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+.table-title{font-size:14px;font-weight:600;flex:1;letter-spacing:-.2px}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th{text-align:left;padding:10px 18px;font-size:10px;font-weight:600;color:var(--subtle);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border);background:var(--bg1)}
+td{padding:13px 18px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,106,26,.03)}
+tr{transition:background .12s}
+tbody tr{animation:fadeUp .3s ease backwards}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.b-pending{background:rgba(255,214,10,.1);color:var(--yellow)}
+.b-pending .badge-dot{animation:dotBlip 1.4s infinite}
+.b-approved{background:rgba(34,211,165,.1);color:var(--green)}
+.b-rejected{background:rgba(255,69,96,.1);color:var(--red)}
+.b-none{background:rgba(136,136,168,.1);color:var(--muted)}
+.b-deduct{background:rgba(255,69,96,.08);color:var(--red)}
+
+.cat-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;font-size:11px;font-weight:500;background:var(--bg3);border:1px solid var(--border)}
+
+.search-wrap{position:relative}
+.search-wrap input{
+background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+padding:7px 12px 7px 32px;font-size:12px;color:var(--text);
+font-family:'Inter',sans-serif;outline:none;width:180px;transition:all .15s;
+}
+.search-wrap input:focus{border-color:var(--accent);width:220px}
+.search-wrap::before{content:'⌕';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted)}
+.city-select{
+background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+padding:6px 10px;font-size:11px;font-weight:500;color:var(--text);
+font-family:'Inter',sans-serif;outline:none;cursor:pointer;transition:border-color .15s;
+}
+.city-select:focus{border-color:var(--accent)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.ftab{
+padding:5px 12px;border-radius:7px;font-size:11px;font-weight:500;
+border:1px solid var(--border);background:transparent;color:var(--muted);
+cursor:pointer;transition:all .15s;
+}
+.ftab.active{background:rgba(255,106,26,.13);color:var(--accent3);border-color:rgba(255,106,26,.33)}
+.ftab:hover:not(.active){background:var(--glass);color:var(--text)}
+
+.form-wrap{max-width:660px}
+.form-section{
+background:var(--bg2);border:1px solid var(--border);
+border-radius:var(--r);padding:24px;margin-bottom:14px;
+animation:fadeUp .35s ease backwards;
+}
+.form-section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.fgroup{margin-bottom:16px}
+.fgroup:last-child{margin-bottom:0}
+.flabel{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:7px;letter-spacing:.2px}
+.req{color:var(--accent3)}
+
+input[type=text],input[type=email],input[type=password],input[type=number],select,textarea{
+width:100%;background:var(--bg3);border:1px solid var(--border);
+border-radius:9px;padding:10px 14px;font-size:13px;color:var(--text);
+font-family:'Inter',sans-serif;outline:none;transition:border-color .15s,box-shadow .15s;
+appearance:none;-webkit-appearance:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,106,26,.12)}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+.cat-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cat-card{
+display:flex;flex-direction:column;align-items:center;gap:7px;
+padding:16px 10px;border-radius:12px;border:1.5px solid var(--border);
+background:var(--bg3);cursor:pointer;transition:all .18s;text-align:center;
+}
+.cat-card:hover{border-color:rgba(255,106,26,.35);transform:translateY(-1px)}
+.cat-card.sel{border-color:var(--accent);background:rgba(255,106,26,.09);box-shadow:0 0 0 3px rgba(255,106,26,.1)}
+.cat-card-icon{font-size:22px}
+.cat-card-label{font-size:11px;font-weight:500;line-height:1.3}
+
+.upload-zone{
+border:2px dashed var(--border2);border-radius:14px;
+padding:36px 24px;text-align:center;cursor:pointer;
+transition:all .25s;position:relative;overflow:hidden;
+background:var(--bg3);
+}
+.upload-zone:hover{border-color:var(--accent);background:rgba(255,106,26,.04)}
+.upload-zone.drag-over{border-color:var(--accent);background:rgba(255,106,26,.08);transform:scale(1.01)}
+.upload-zone.required-pulse{animation:pulse-border .6s ease 2;}
+@keyframes pulse-border{0%,100%{border-color:var(--border2)}50%{border-color:var(--red)}}
+.upload-icon{font-size:40px;margin-bottom:12px;animation:floatY 2.6s ease-in-out infinite;display:block}
+.upload-title{font-size:14px;font-weight:600;margin-bottom:5px}
+.upload-sub{font-size:12px;color:var(--muted);line-height:1.5}
+.upload-badge{
+display:inline-block;margin-top:12px;padding:4px 12px;
+border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+background:rgba(255,69,96,.12);color:var(--red);border:1px solid rgba(255,69,96,.22);
+}
+
+.preview-wrap{
+border-radius:12px;overflow:hidden;border:1px solid var(--border);
+position:relative;display:none;margin-top:14px;
+animation:popIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+.preview-wrap img{width:100%;max-height:220px;object-fit:cover;display:block}
+.preview-overlay{
+position:absolute;bottom:0;left:0;right:0;
+background:linear-gradient(transparent,rgba(0,0,0,.7));
+padding:20px 16px 14px;display:flex;align-items:center;justify-content:space-between;
+}
+.preview-label{font-size:12px;font-weight:500;color:rgba(255,255,255,.85)}
+.rm-photo{
+background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+border:1px solid rgba(255,255,255,.2);color:#fff;
+border-radius:8px;padding:5px 12px;font-size:11px;font-weight:500;
+cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:5px;
+}
+.rm-photo:hover{background:rgba(255,69,96,.4)}
+
+.amount-wrap{position:relative}
+.amount-wrap input{padding-right:40px}
+.amount-currency{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none;font-weight:600}
+.deduct-amount-box{
+background:rgba(255,69,96,.04);border:1px solid rgba(255,69,96,.2);
+border-radius:12px;padding:18px;margin-top:14px;animation:fadeUp .25s ease;
+}
+.deduct-amount-label{font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+.radio-cards{display:flex;flex-direction:column;gap:8px}
+.rcard{
+display:flex;align-items:center;gap:14px;padding:14px 16px;
+border-radius:10px;border:1.5px solid var(--border);background:var(--bg3);
+cursor:pointer;transition:all .18s;
+}
+.rcard:hover{border-color:rgba(255,106,26,.3)}
+.rcard.sel{border-color:var(--accent);background:rgba(255,106,26,.06)}
+.rcirc{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.rcard.sel .rcirc{border-color:var(--accent);background:var(--accent)}
+.rcard.sel .rcirc::after{content:'';width:5px;height:5px;border-radius:50%;background:#fff}
+.rlabel{font-size:13px;font-weight:500}
+.rdesc{font-size:11px;color:var(--muted);margin-top:2px}
+
+.steps-track{display:flex;align-items:center;gap:8px;margin-bottom:22px}
+.step-pill{
+display:flex;align-items:center;gap:7px;padding:7px 13px;
+border-radius:99px;background:var(--bg2);border:1px solid var(--border);
+font-size:11px;font-weight:600;color:var(--subtle);transition:all .25s;
+white-space:nowrap;
+}
+.step-pill.done{color:var(--green);border-color:rgba(34,211,165,.25);background:rgba(34,211,165,.06)}
+.step-pill.cur{color:var(--accent3);border-color:rgba(255,106,26,.3);background:rgba(255,106,26,.08)}
+.step-line{flex:1;height:1px;background:var(--border)}
+
+.cc{font-size:10px;color:var(--subtle);text-align:right;margin-top:4px}
+.cc.ok{color:var(--green)}
+
+.overlay{
+position:fixed;inset:0;background:rgba(0,0,0,.78);
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+z-index:100;display:none;align-items:center;justify-content:center;
+padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.overlay.open{display:flex}
+.modal{
+background:var(--bg2);border:1px solid var(--border2);
+border-radius:18px;width:100%;max-width:540px;
+animation:slideRight .25s cubic-bezier(.4,0,.2,1);
+position:relative;margin:auto;
+}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);border-radius:18px 18px 0 0}
+.mhead{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.mtitle{font-size:15px;font-weight:600;flex:1}
+.mclose{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.mclose:hover{background:var(--glass2)}
+.mbody{padding:22px;overflow-y:auto;max-height:70vh;-webkit-overflow-scrolling:touch}
+.mfooter{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.dl{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:3px}
+.dv{font-size:13px;font-weight:500}
+.photo-box{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:16px}
+.photo-box img{width:100%;max-height:220px;object-fit:cover;display:block}
+.no-photo{background:var(--bg3);border-radius:10px;border:1px solid var(--border);padding:18px;text-align:center;color:var(--subtle);font-size:12px;margin-bottom:16px}
+.cbox{background:var(--bg3);border-radius:9px;border:1px solid var(--border);padding:12px 14px;font-size:13px;line-height:1.5}
+
+.iiko-banner{
+background:linear-gradient(135deg,rgba(255,106,26,.08),rgba(56,189,248,.04));
+border:1px solid rgba(255,106,26,.2);border-radius:var(--r);
+padding:18px 20px;display:flex;align-items:center;gap:16px;margin-bottom:20px;
+}
+.iiko-icon{font-size:28px}
+.iiko-text{flex:1}
+.iiko-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.iiko-sub{font-size:12px;color:var(--muted)}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--green)}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+
+.toast-wrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none}
+.toast{
+background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
+padding:12px 16px;font-size:13px;font-weight:500;max-width:320px;
+display:flex;align-items:center;gap:10px;
+animation:toastIn .3s cubic-bezier(.4,0,.2,1);
+box-shadow:0 8px 32px rgba(0,0,0,.6);
+}
+.toast-success{border-left:3px solid var(--green)}
+.toast-error{border-left:3px solid var(--red)}
+.toast-info{border-left:3px solid var(--accent)}
+
+#loginPage{
+position:fixed;inset:0;background:var(--bg);
+display:flex;align-items:center;justify-content:center;
+z-index:300;overflow-y:auto;padding:20px;
+}
+.login-bg{
+position:fixed;inset:0;z-index:0;
+background:
+radial-gradient(ellipse at 65% 15%,rgba(255,106,26,.18) 0%,transparent 60%),
+radial-gradient(ellipse at 20% 85%,rgba(56,189,248,.1) 0%,transparent 50%);
+}
+.login-card{
+position:relative;z-index:1;
+background:rgba(12,12,18,.92);border:1px solid rgba(255,255,255,.1);
+border-radius:22px;padding:36px;width:100%;max-width:430px;
+backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+box-shadow:0 40px 80px rgba(0,0,0,.7);
+animation:popIn .45s cubic-bezier(.16,1,.3,1);
+}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);border-radius:22px 22px 0 0}
+.llogo{text-align:center;margin-bottom:32px}
+.llogo-mark{
+width:62px;height:62px;border-radius:18px;
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+display:flex;align-items:center;justify-content:center;
+font-size:22px;font-weight:900;color:#fff;
+margin:0 auto 16px;box-shadow:0 10px 40px rgba(255,106,26,.5);
+}
+.lname{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.lsub{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.4}
+.tabs{display:flex;background:var(--bg3);border-radius:10px;padding:3px;margin-bottom:22px}
+.tab{flex:1;padding:8px;text-align:center;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--muted)}
+.tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.lbtn{
+width:100%;padding:13px;border:none;border-radius:10px;
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+color:#fff;font-size:14px;font-weight:700;cursor:pointer;
+font-family:'Inter',sans-serif;transition:all .15s;margin-top:8px;
+box-shadow:0 6px 24px rgba(255,106,26,.4);
+}
+.lbtn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(255,106,26,.5)}
+.lbtn:active{transform:scale(.98)}
+.demo-hint{margin-top:16px;padding:12px 14px;background:var(--glass);border:1px solid var(--border);border-radius:10px;font-size:11px;color:var(--muted);line-height:1.6}
+.demo-hint b{color:var(--text)}
+
+.mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border)}
+.mini-stat{padding:14px 18px;border-right:1px solid var(--border)}
+.mini-stat:last-child{border-right:none}
+.mini-stat-label{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:5px}
+.mini-stat-val{font-size:22px;font-weight:300;letter-spacing:-.5px}
+
+.profile-hero{
+background:linear-gradient(135deg,rgba(255,106,26,.08),rgba(56,189,248,.04));
+border:1px solid var(--border);border-radius:var(--r);
+padding:26px;display:flex;align-items:center;gap:20px;margin-bottom:18px;
+}
+.profile-avatar-big{
+width:72px;height:72px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+font-size:26px;font-weight:700;flex-shrink:0;
+background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+}
+.profile-name{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.profile-meta{font-size:13px;color:var(--muted)}
+.profile-stats{display:flex;gap:24px;margin-top:12px}
+.ps{text-align:center}
+.ps-val{font-size:18px;font-weight:600;color:var(--accent2)}
+.ps-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.profile-form{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:14px}
+
+.empty{text-align:center;padding:60px 20px}
+.empty-icon{font-size:44px;margin-bottom:14px}
+.empty-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.empty-text{font-size:13px;color:var(--muted)}
+
+.quick-links{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.quick-link{
+background:var(--bg2);border:1px solid var(--border);
+border-radius:14px;padding:20px;cursor:pointer;
+transition:all .18s;display:flex;align-items:center;gap:14px;
+}
+.quick-link:hover{border-color:rgba(255,106,26,.35);transform:translateY(-2px)}
+.quick-link-icon{
+font-size:22px;width:44px;height:44px;border-radius:10px;
+background:rgba(255,106,26,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.quick-link-title{font-size:13px;font-weight:600}
+.quick-link-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.overlay-bg{
+display:none;position:fixed;inset:0;
+background:rgba(0,0,0,.55);z-index:30;
+backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+}
+
+/* ── NOTIFICATIONS PAGE ── */
+.notif-list{display:flex;flex-direction:column;gap:10px}
+.notif-item{
+background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+padding:14px 16px;display:flex;gap:12px;align-items:flex-start;
+transition:border-color .15s,background .15s;cursor:pointer;
+animation:fadeUp .3s ease backwards;
+}
+.notif-item:hover{border-color:var(--border2);background:var(--glass2)}
+.notif-item.unread{border-color:rgba(255,106,26,.25);background:rgba(255,106,26,.04)}
+.notif-icon{width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:13px;font-weight:600}
+.notif-text{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.notif-time{font-size:10px;color:var(--subtle);margin-top:6px}
+.notif-unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px}
+
+@media(max-width:900px){
+.charts-grid,.charts-grid-3{grid-template-columns:1fr}
+}
+
+@media(max-width:768px){
+.sidebar{
+position:fixed;top:0;bottom:0;left:0;
+z-index:40;transform:translateX(-100%);
+box-shadow:4px 0 32px rgba(0,0,0,.5);
+}
+.sidebar.open{transform:none}
+.overlay-bg.open{display:block}
+.mob-menu{display:flex}
+
+.stats-row{grid-template-columns:1fr 1fr}
+.frow,.frow3{grid-template-columns:1fr}
+.cat-picker{grid-template-columns:repeat(2,1fr)}
+.content{padding:14px}
+.quick-links{grid-template-columns:1fr}
+.mini-stats{grid-template-columns:1fr 1fr}
+.dg{grid-template-columns:1fr}
+.mfooter{flex-direction:column-reverse}
+.mfooter .btn{width:100%;justify-content:center}
+.topbar{padding:0 14px}
+.iiko-banner{flex-wrap:wrap}
+.upload-zone{padding:24px 16px}
+.steps-track{overflow-x:auto;padding-bottom:4px}
+.step-pill{font-size:10px;padding:6px 10px}
+.toast-wrap{right:12px;bottom:12px;left:12px}
+.toast{max-width:100%}
+}
+
+@media(max-width:480px){
+.stats-row{grid-template-columns:1fr}
+.mini-stats{grid-template-columns:1fr 1fr}
+.cat-picker{grid-template-columns:1fr 1fr}
+.table-head{padding:12px 14px}
+.dash-chart-head{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="loginPage">
+<div class="login-bg"></div>
+<div class="login-card">
+<div class="llogo">
+<div class="llogo-mark">₸</div>
+<div class="lname">Ctrlmoney</div>
+<div class="lsub">Цифровой контроль списаний торговой сети</div>
+</div>
+<div class="tabs">
+<div class="tab active" id="loginTab" onclick="switchAuthTab('login')">Вход</div>
+<div class="tab" id="regTab" onclick="switchAuthTab('register')">Регистрация</div>
+</div>
+<div id="loginForm">
+<div class="fgroup"><label class="flabel">Email</label><input type="email" id="liEmail" value="staff@ctrlmoney.kz" placeholder="email@company.kz" autocomplete="email"/></div>
+<div class="fgroup"><label class="flabel">Пароль</label><input type="password" id="liPass" value="staff123" placeholder="••••••••" autocomplete="current-password"/></div>
+<button class="lbtn" onclick="doLogin()">Войти →</button>
+<div class="demo-hint">Демо: <b>staff@ctrlmoney.kz</b> / staff123 (сотрудник)<br/><b>checker@ctrlmoney.kz</b> / check123 (проверяющий)</div>
+</div>
+<div id="regForm" style="display:none">
+<div class="frow">
+<div class="fgroup"><label class="flabel">Имя <span class="req">*</span></label><input type="text" id="rFirst" placeholder="Айдана"/></div>
+<div class="fgroup"><label class="flabel">Фамилия <span class="req">*</span></label><input type="text" id="rLast" placeholder="Сейткали"/></div>
+</div>
+<div class="fgroup"><label class="flabel">Email <span class="req">*</span></label><input type="email" id="rEmail" placeholder="email@company.kz"/></div>
+<div class="fgroup"><label class="flabel">Должность <span class="req">*</span></label><select id="rPos"><option value="">— Выберите должность —</option></select></div>
+<div class="fgroup"><label class="flabel">Смена</label>
+<select id="rShift"><option value="">— Смена —</option><option>Смена 1 (08:00–18:00)</option><option>Смена 2 (18:00–04:00)</option></select>
+</div>
+<div class="frow">
+<div class="fgroup"><label class="flabel">Торговая точка</label><select id="rOutlet"><option value="">— Точка —</option></select></div>
+<div class="fgroup"><label class="flabel">Роль в системе</label>
+<select id="rRole"><option value="staff">Сотрудник</option><option value="checker">Проверяющий</option></select>
+</div>
+</div>
+<div class="fgroup"><label class="flabel">Пароль <span class="req">*</span></label><input type="password" id="rPass" placeholder="Не менее 8 символов"/></div>
+<div class="fgroup"><label class="flabel">Подтвердите пароль <span class="req">*</span></label><input type="password" id="rPass2" placeholder="Повторите пароль"/></div>
+<button class="lbtn" onclick="doRegister()">Создать аккаунт →</button>
+</div>
+</div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div class="app" id="mainApp" style="display:none">
+<div class="overlay-bg" id="overlayBg" onclick="closeSidebar()"></div>
+
+<nav class="sidebar" id="sidebar">
+<div class="logo-area">
+<div class="logo">
+<div class="logo-mark">₸</div>
+<div><div class="logo-name">Ctrlmoney</div><div class="logo-sub">Control · Money</div></div>
+</div>
+</div>
+<div class="nav" id="sidebarNav"></div>
+<div class="sidebar-bottom">
+<div class="user-pill" onclick="navigate('profile')">
+<div class="avatar" id="sidebarAvatar">
+<div class="avatar-ring"></div>
+<span id="sidebarInitials">АИ</span>
+</div>
+<div>
+<div class="user-name" id="sidebarName">—</div>
+<div class="user-role" id="sidebarRole">—</div>
+</div>
+</div>
+</div>
+</nav>
+
+<div class="main">
+<div class="topbar">
+<button class="mob-menu" onclick="openSidebar()" aria-label="Меню">☰</button>
+<div class="topbar-title" id="topTitle">Главная</div>
+<div class="topbar-actions">
+<button class="btn btn-ghost btn-sm" onclick="doLogout()">Выход</button>
+</div>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+<div class="iiko-banner">
+<div class="iiko-icon">⚙️</div>
+<div class="iiko-text">
+<div class="iiko-title">Iiko Integration</div>
+<div class="iiko-sub">Акты автоматически передаются в систему учёта после одобрения</div>
+</div>
+<div class="live-dot"><div class="pulse"></div> Live</div>
+</div>
+<div class="stats-row" id="statsGrid"></div>
+<div class="dash-chart-card">
+<div class="dash-chart-head">
+<div class="dash-chart-title">Динамика списаний</div>
+<div class="chart-legend">
+<span><i style="background:#ff6a1a"></i>Без удержания</span>
+<span><i style="background:#ff4560"></i>С удержанием</span>
+</div>
+<div class="chart-tabs">
+<button class="ctab active" id="ctab-day" onclick="switchChartMode('day')">По дням</button>
+<button class="ctab" id="ctab-week" onclick="switchChartMode('week')">По неделям</button>
+</div>
+</div>
+<div style="position:relative;height:220px">
+<canvas id="dashChart"></canvas>
+</div>
+</div>
+<div class="quick-links" id="quickLinks"></div>
+</div>
+
+<!-- NEW REQUEST -->
+<div class="page" id="page-new-request">
+<div class="form-wrap">
+<div class="steps-track">
+<div class="step-pill" id="step-1">① Фото</div>
+<div class="step-line"></div>
+<div class="step-pill" id="step-2">② Детали</div>
+<div class="step-line"></div>
+<div class="step-pill" id="step-3">③ Тип</div>
+<div class="step-line"></div>
+<div class="step-pill" id="step-4">④ Комментарий</div>
+</div>
+
+<!-- PHOTO — ОБЯЗАТЕЛЬНОЕ -->
+<div class="form-section">
+<div class="form-section-title">📷 Фотоподтверждение <span class="req" style="font-size:13px">*</span></div>
+<div class="upload-zone" id="uploadArea"
+onclick="document.getElementById('photoIn').click()"
+ondragover="onDragOver(event)"
+ondragleave="onDragLeave(event)"
+ondrop="onDrop(event)">
+<span class="upload-icon">📷</span>
+<div class="upload-title">Загрузить фото продукции</div>
+<div class="upload-sub">JPG, PNG, WEBP — перетащите или нажмите для выбора<br/>Обязательно для подтверждения фактического состояния</div>
+<span class="upload-badge">Обязательно</span>
+</div>
+<div class="preview-wrap" id="previewWrap">
+<img id="previewImg" src="" alt="Фото списания"/>
+<div class="preview-overlay">
+<span class="preview-label">✅ Фото прикреплено</span>
+<button class="rm-photo" onclick="rmPhoto(event)">✕ Удалить</button>
+</div>
+</div>
+<input type="file" id="photoIn" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+</div>
+
+<div class="form-section">
+<div class="form-section-title">📦 Категория списания <span class="req" style="font-size:13px">*</span></div>
+<div class="cat-picker" id="catPicker"></div>
+</div>
+
+<div class="form-section">
+<div class="form-section-title">📝 Детали списания</div>
+<div class="frow">
+<div class="fgroup"><label class="flabel">Торговая точка <span class="req">*</span></label><select id="fOutlet"><option value="">— Выберите —</option></select></div>
+<div class="fgroup"><label class="flabel">Продукт <span class="req">*</span></label><input type="text" id="fProduct" placeholder="Помидоры черри…"/></div>
+</div>
+<div class="fgroup"><label class="flabel">Количество / объём <span class="req">*</span></label><input type="text" id="fQty" placeholder="500 г, 12 шт, 2 л"/></div>
+</div>
+
+<div class="form-section">
+<div class="form-section-title">⚖️ Тип списания <span class="req" style="font-size:13px">*</span></div>
+<div class="radio-cards">
+<div class="rcard" id="opt-none" onclick="selType('none')">
+<div class="rcirc"></div>
+<div><div class="rlabel">Без удержания</div><div class="rdesc">Производственный брак, истечение срока, внешние факторы</div></div>
+</div>
+<div class="rcard" id="opt-deduct" onclick="selType('deduct')">
+<div class="rcirc"></div>
+<div><div class="rlabel">С удержанием с сотрудника</div><div class="rdesc">Нарушение стандартов хранения или приготовления</div></div>
+</div>
+</div>
+</div>
+
+<div class="form-section" id="empSection" style="display:none">
+<div class="form-section-title">👤 Сотрудник и сумма удержания</div>
+<div class="fgroup">
+<label class="flabel">Выберите сотрудника <span class="req">*</span></label>
+<select id="fEmp">
+<option value="">— Выберите —</option>
+<optgroup label="Смена 1 (08:00–18:00)">
+<option>Карим Сейтов — Повар горячего цеха (С1)</option>
+<option>Айгерим Нурова — Кладовщик (С1)</option>
+<option>Дина Ахметова — Официант (С1)</option>
+<option>Ерлан Жаксыбеков — Помощник повара (С1)</option>
+<option>Жанат Абдуллаев — Бармен (С1)</option>
+<option>Мадина Искакова — Кассир (С1)</option>
+<option>Нурлан Байжанов — Приёмщик товара (С1)</option>
+<option>Оксана Лим — Хостес (С1)</option>
+</optgroup>
+<optgroup label="Смена 2 (18:00–04:00)">
+<option>Диана Мухамбетова — Кассир (С2)</option>
+<option>Алибек Жумабаев — Повар горячего цеха (С2)</option>
+<option>Рустем Омаров — Официант (С2)</option>
+<option>Самал Сарсенова — Помощник повара (С2)</option>
+<option>Тимур Касымов — Бармен (С2)</option>
+<option>Айша Дюсембаева — Кладовщик (С2)</option>
+<option>Данияр Мусин — Приёмщик товара (С2)</option>
+<option>Гульнара Юсупова — Официант (С2)</option>
+</optgroup>
+</select>
+</div>
+<div class="deduct-amount-box">
+<div class="deduct-amount-label">💸 Сумма удержания</div>
+<div class="fgroup" style="margin-bottom:0">
+<label class="flabel">Сумма <span class="req">*</span></label>
+<div class="amount-wrap">
+<input type="number" id="fAmount" min="0" step="100" placeholder="0"/>
+<span class="amount-currency">₸</span>
+</div>
+</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px">Сумма будет передана в акт Iiko и отражена в отчёте</div>
+</div>
+</div>
+
+<div class="form-section">
+<div class="form-section-title">💬 Комментарий <span class="req" style="font-size:13px">*</span></div>
+<div class="fgroup">
+<textarea id="fComment" placeholder="Опишите причину (минимум 10 символов)…" oninput="updateCC()"></textarea>
+<div class="cc" id="cc">0 символов</div>
+</div>
+<div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+<button class="btn btn-ghost btn-md" onclick="navigate('dashboard')">Отмена</button>
+<button class="btn btn-primary btn-md" onclick="submitReq()">Отправить заявку →</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MY REQUESTS -->
+<div class="page" id="page-my-requests">
+<div class="table-card">
+<div class="table-head">
+<div class="table-title">Мои заявки</div>
+<div class="filters">
+<button class="ftab active" onclick="filterMy('all',this)">Все</button>
+<button class="ftab" onclick="filterMy('pending',this)">На проверке</button>
+<button class="ftab" onclick="filterMy('approved',this)">Одобрено</button>
+<button class="ftab" onclick="filterMy('rejected',this)">Отклонено</button>
+</div>
+</div>
+<div id="myMiniStats"></div>
+<div class="table-scroll" id="myTable"></div>
+</div>
+</div>
+
+<!-- PENDING -->
+<div class="page" id="page-pending">
+<div class="table-card">
+<div class="table-head">
+<div class="table-title">Ожидают проверки</div>
+<div style="display:flex;gap:8px;align-items:center">
+<select class="city-select" id="pendingCitySel" onchange="filterPendingCity(this.value)"><option value="">Все города</option></select>
+</div>
+</div>
+<div class="table-scroll" id="pendingTable"></div>
+</div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="page" id="page-notifications">
+<div class="table-card">
+<div class="table-head">
+<div class="table-title">Уведомления</div>
+<button class="btn btn-ghost btn-sm" onclick="markAllNotifRead()">Отметить все как прочитанные</button>
+</div>
+<div style="padding:16px"><div class="notif-list" id="notifList"></div></div>
+</div>
+</div>
+
+<!-- REVIEW HISTORY -->
+<div class="page" id="page-review">
+<div class="table-card">
+<div class="table-head">
+<div class="table-title">История проверки</div>
+<div class="filters" id="revFilters">
+<button class="ftab active" onclick="filterRev('all',this)">Все</button>
+<button class="ftab" onclick="filterRev('pending',this)">Ожидают</button>
+<button class="ftab" onclick="filterRev('approved',this)">Одобрено</button>
+<button class="ftab" onclick="filterRev('rejected',this)">Отклонено</button>
+</div>
+<select class="city-select" id="revCitySel" onchange="filterRevCity(this.value)"><option value="">Все города</option></select>
+</div>
+<div class="table-scroll" id="revTable"></div>
+</div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="page" id="page-history">
+<div class="stats-row" id="anlStatsGrid" style="grid-template-columns:repeat(3,1fr)"></div>
+<div class="chart-card" style="margin-bottom:20px">
+<div class="chart-card-title">🏆 Топ торговых точек</div>
+<div class="chart-card-sub">По числу заявок на списание</div>
+<div class="rank-list" id="outletRank"></div>
+</div>
+<div class="table-card">
+<div class="table-head">
+<div class="table-title">Журнал списаний</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<div class="filters" id="histFilters">
+<button class="ftab active" onclick="filterHist('all',this)">Все</button>
+<button class="ftab" onclick="filterHist('none',this)">Без удержания</button>
+<button class="ftab" onclick="filterHist('deduct',this)">С удержанием</button>
+</div>
+<select class="city-select" id="histCatSel" onchange="filterHistCat(this.value)"><option value="">Все категории</option></select>
+<select class="city-select" id="histCitySel" onchange="filterHistCity(this.value)"><option value="">Все города</option></select>
+<div class="search-wrap"><input type="text" placeholder="Поиск…" oninput="searchHist(this.value)"/></div>
+<button class="btn btn-ghost btn-sm" onclick="exportHistCSV()">⬇ CSV</button>
+</div>
+</div>
+<div class="table-scroll" id="histTable"></div>
+</div>
+</div>
+
+<!-- IIKO -->
+<div class="page" id="page-iiko">
+<div class="iiko-banner">
+<div class="iiko-icon">⚙️</div>
+<div class="iiko-text">
+<div class="iiko-title">Iiko — Автоматическая передача актов</div>
+<div class="iiko-sub">Каждое одобренное списание создаёт акт в системе учёта моментально</div>
+</div>
+<div class="live-dot"><div class="pulse"></div> Подключено</div>
+</div>
+<div class="stats-row" style="grid-template-columns:repeat(3,1fr)" id="iikoStats"></div>
+<div class="table-card"><div class="table-head"><div class="table-title">Акты в Iiko</div></div><div class="table-scroll" id="iikoTable"></div></div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile"><div id="profileContent"></div></div>
+
+</div>
+</div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailModal">
+<div class="modal">
+<div class="mhead"><div class="mtitle">Детали заявки</div><button class="mclose" onclick="closeModal()">✕</button></div>
+<div class="mbody" id="modalBody"></div>
+<div class="mfooter" id="modalFoot"></div>
+</div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let role='staff',myFilter='all',revFilter='all',revCity='',pendingCity='',histFilter='all',histCity='',histCat='',histSearch='',selTypeVal=null,photoUrl=null,catVal=null;
+let chartMode='day',dashChartInst=null,catDonutInst=null,weekdayChartInst=null;
+let me={name:'Аида Ибрагимова',email:'staff@ctrlmoney.kz',pos:'Кассир',shift:'Смена 1 (08:00–18:00)',outlet:'Bahandi ЦУМ',role:'staff'};
+
+const POSITIONS=[
+'Отдел контроля','Супервайзер-администратор','Управляющий точкой','Менеджер смены','Проверяющий (ревизор)',
+'Шеф-повар','Повар горячего цеха','Повар холодного цеха','Повар-кондитер','Помощник повара',
+'Старший официант','Официант','Бармен','Хостес',
+'Кассир','Кладовщик','Старший кладовщик','Приёмщик товара'
+];
+function positionOptionsHTML(sel){return POSITIONS.map(p=>`<option${p===sel?' selected':''}>${p}</option>`).join('')}
+function populatePositionSelects(){const el=document.getElementById('rPos');if(el)el.innerHTML='<option value="">— Выберите должность —</option>'+positionOptionsHTML('')}
+
+const CATEGORIES=[
+{id:'veg',label:'Овощи и зелень',icon:'🍅',color:'#ff6a1a'},
+{id:'cooked',label:'Готовая продукция',icon:'🍔',color:'#ff4560'},
+{id:'bread',label:'Хлеб и булочки',icon:'🥯',color:'#ffd60a'},
+{id:'dropped',label:'Упавшее / санитария',icon:'⚠️',color:'#ff9a4d'},
+{id:'dairy',label:'Молочное и соусы',icon:'🥛',color:'#38bdf8'},
+{id:'other',label:'Другое',icon:'📦',color:'#8888a8'},
+];
+function catInfo(id){return CATEGORIES.find(c=>c.id===id)||CATEGORIES[CATEGORIES.length-1]}
+function catChip(id){const c=catInfo(id);return`<span class="cat-chip"><span>${c.icon}</span>${c.label}</span>`}
+function renderCatPicker(){
+const el=document.getElementById('catPicker');if(!el)return;
+el.innerHTML=CATEGORIES.map(c=>`<div class="cat-card" id="catc-${c.id}" onclick="pickCat('${c.id}')">
+<div class="cat-card-icon">${c.icon}</div><div class="cat-card-label">${c.label}</div>
+</div>`).join('');
+}
+function pickCat(id){
+catVal=id;
+CATEGORIES.forEach(c=>{const el=document.getElementById('catc-'+c.id);if(el)el.classList.toggle('sel',c.id===id)});
+}
+function histCatOptionsHTML(){return CATEGORIES.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join('')}
+</script>
+
+<script>
+const OUTLETS=[
+{name:'Bahandi Шахтеров',city:'Караганда'},{name:'Bahandi Магнум Жетысу',city:'Алматы'},
+{name:'Bahandi АДК',city:'Алматы'},{name:'Bahandi Сары Арка',city:'Алматы'},
+{name:'Bahandi Март',city:'Костанай'},{name:'Bahandi Каменка',city:'Алматы'},
+{name:'Bahandi Астана Молл',city:'Астана'},{name:'Bahandi Магнум Акбулак',city:'Алматы'},
+{name:'Bahandi Форум',city:'Алматы'},{name:'Bahandi Орбита',city:'Алматы'},
+{name:'Bahandi Север',city:'Шымкент'},{name:'Bahandi Спутник',city:'Алматы'},
+{name:'Bahandi Грин Плаза',city:'Актау'},{name:'Bahandi Апорт Кульджинка',city:'Алматы'},
+{name:'Bahandi Каскелен',city:'Алматы'},{name:'Bahandi Даму Молл',city:'Астана'},
+{name:'Bahandi Магнум Гагарина',city:'Алматы'},{name:'Bahandi Тумар',city:'Астана'},
+{name:'Bahandi Татарка',city:'Алматы'},{name:'Bahandi Масанчи',city:'Алматы'},
+{name:'Bahandi Строителей',city:'Караганда'},{name:'Bahandi Март Тараз',city:'Тараз'},
+{name:'Bahandi Жибек Жолы',city:'Астана'},{name:'Bahandi Мега Центр Розыбакиева',city:'Алматы'},
+{name:'Bahandi Атакент',city:'Алматы'},{name:'Bahandi ЦУМ',city:'Алматы'},
+{name:'Bahandi Керемет',city:'Шымкент'},{name:'Bahandi Масато',city:'Алматы'},
+{name:'Bahandi Жубанова',city:'Алматы'},{name:'Bahandi Дружба',city:'Алматы'},
+{name:'Bahandi Бесагаш',city:'Алматы'},{name:'Bahandi ГРЭС',city:'Алматы'},
+{name:'Bahandi Кунаева',city:'Алматы'},{name:'Bahandi Мангилик Ел',city:'Астана'},
+{name:'Bahandi Талгар',city:'Алматы'},{name:'Bahandi Торнадо',city:'Алматы'},
+{name:'Bahandi ВАЗ',city:'Алматы'},{name:'Bahandi Женис',city:'Астана'},
+{name:'Bahandi Сити Молл',city:'Шымкент'},{name:'Bahandi Азия Парк',city:'Алматы'},
+{name:'Bahandi Апорт',city:'Алматы'},{name:'Bahandi Даймонд Плаза',city:'Шымкент'},
+{name:'Bahandi Байтурсынова',city:'Алматы'},{name:'Bahandi ЦУМ Кар',city:'Караганда'},
+{name:'Bahandi Гагарина',city:'Алматы'},{name:'Bahandi Дала Молл',city:'Шымкент'},
+{name:'Bahandi Магнум Бесагаш',city:'Алматы'},{name:'Bahandi Гульжан',city:'Караганда'},
+{name:'Bahandi Сая Парк',city:'Актау'},{name:'Bahandi Капчагай',city:'Алматы'},
+{name:'Bahandi Чубары',city:'Астана'},{name:'Bahandi Хан Шатыр',city:'Астана'},
+{name:'Bahandi Юбилейный',city:'Караганда'},{name:'Bahandi Акжар',city:'Алматы'},
+{name:'Bahandi Рио',city:'Кокшетау'},{name:'Bahandi Аружан',city:'Астана'},
+{name:'Bahandi Магнум Туран',city:'Астана'},{name:'Bahandi Далида Сити',city:'Актобе'},
+{name:'Bahandi Ритц Палас',city:'Алматы'},{name:'Bahandi Янги Шахар',city:'Шымкент'},
+{name:'Bahandi Жаркент',city:'Алматы'},{name:'Bahandi Таукехана',city:'Шымкент'},
+{name:'Bahandi Роял Плаза',city:'Шымкент'},{name:'Bahandi Петрова',city:'Астана'},
+{name:'Bahandi Мерей',city:'Алматы'},{name:'Bahandi Тастак',city:'Алматы'},
+{name:'Bahandi Весновка',city:'Алматы'},{name:'Bahandi Айнабулак',city:'Алматы'},
+{name:'Bahandi Глобус Фудкорт',city:'Алматы'},{name:'Bahandi Динара',city:'Шымкент'},
+{name:'Bahandi Мега SilkWay',city:'Астана'},{name:'Bahandi Иманова',city:'Астана'},
+{name:'Bahandi Макси Молл',city:'Усть-Каменогорск'},{name:'Bahandi Максима',city:'Алматы'},
+{name:'Bahandi Мега Парк Сейфуллина',city:'Алматы'},{name:'Bahandi Шолохова',city:'Алматы'},
+{name:'Bahandi АДК Ривер',city:'Усть-Каменогорск'},{name:'Bahandi Байзаар',city:'Атырау'},
+{name:'Bahandi Инфинити Молл',city:'Атырау'},{name:'Bahandi Азия Парк 2',city:'Астана'},
+{name:'Bahandi Жумалиева',city:'Алматы'},{name:'Bahandi Магнум Кошкарбаева',city:'Астана'},
+{name:'Bahandi Панфилова',city:'Алматы'},{name:'Bahandi Водник',city:'Алматы'},
+{name:'Bahandi Белинского',city:'Алматы'},
+];
+const CITIES=[...new Set(OUTLETS.map(o=>o.city))].sort();
+function cityOf(n){const o=OUTLETS.find(x=>x.name===n);return o?o.city:null}
+function outletOptionsHTML(selected,withAll){
+const byCity={};
+OUTLETS.forEach(o=>{(byCity[o.city]=byCity[o.city]||[]).push(o.name)});
+let html='';
+if(withAll)html+=`<optgroup label="Головной офис"><option${selected==='Все точки'?' selected':''}>Все точки</option></optgroup>`;
+Object.keys(byCity).sort().forEach(city=>{
+html+=`<optgroup label="${city}">`;
+byCity[city].forEach(n=>{html+=`<option${n===selected?' selected':''}>${n}</option>`});
+html+='</optgroup>';
+});
+return html;
+}
+function populateOutletSelects(){
+const fO=document.getElementById('fOutlet');if(fO)fO.innerHTML='<option value="">— Выберите —</option>'+outletOptionsHTML('',false);
+const rO=document.getElementById('rOutlet');if(rO)rO.innerHTML='<option value="">— Точка —</option>'+outletOptionsHTML('',true);
+}
+function cityOptionsHTML(){return CITIES.map(c=>`<option value="${c}">${c}</option>`).join('')}
+function populateCitySelects(){
+['histCitySel','revCitySel','pendingCitySel'].forEach(id=>{
+const el=document.getElementById(id);
+if(el)el.innerHTML='<option value="">Все города</option>'+cityOptionsHTML();
+});
+const hc=document.getElementById('histCatSel');
+if(hc)hc.innerHTML='<option value="">Все категории</option>'+histCatOptionsHTML();
+}
+</script>
+
+<script>
+const reqs=[
+{id:'REQ-001',date:'27.06.2026 09:14',outlet:'Bahandi ЦУМ',cat:'veg',product:'Помидоры черри',qty:'300 г',type:'none',emp:'—',amount:null,comment:'Помятые, не соответствуют стандарту подачи',status:'approved',photo:null,iiko:'ACT-2340',owner:null},
+{id:'REQ-002',date:'27.06.2026 10:05',outlet:'Bahandi Мега SilkWay',cat:'cooked',product:'Котлеты говяжьи',qty:'4 шт',type:'deduct',emp:'Карим Сейтов',amount:3500,comment:'Упали на пол во время приготовления',status:'pending',photo:null,iiko:null,owner:null},
+{id:'REQ-003',date:'26.06.2026 17:42',outlet:'Bahandi Хан Шатыр',cat:'bread',product:'Булочки для бургера',qty:'8 шт',type:'none',emp:'—',amount:null,comment:'Повреждены при транспортировке поставщиком',status:'approved',photo:null,iiko:'ACT-2338',owner:null},
+{id:'REQ-004',date:'26.06.2026 15:20',outlet:'Bahandi ЦУМ',cat:'dairy',product:'Соус сырный',qty:'200 мл',type:'deduct',emp:'Диана Мухамбетова',amount:1200,comment:'Просрочен, не убран вовремя',status:'rejected',photo:null,iiko:null,owner:null},
+{id:'REQ-005',date:'25.06.2026 11:00',outlet:'Bahandi Сары Арка',cat:'cooked',product:'Картофель фри',qty:'500 г',type:'none',emp:'—',amount:null,comment:'Остатки после закрытия смены',status:'approved',photo:null,iiko:'ACT-2335',owner:null},
+{id:'REQ-006',date:'25.06.2026 09:30',outlet:'Bahandi Дала Молл',cat:'veg',product:'Листья салата',qty:'150 г',type:'none',emp:'—',amount:null,comment:'Завяли, не соответствуют стандарту свежести',status:'pending',photo:null,iiko:null,owner:null},
+{id:'REQ-007',date:'24.06.2026 14:15',outlet:'Bahandi Апорт',cat:'dropped',product:'Куриное филе',qty:'1.2 кг',type:'deduct',emp:'Алибек Жумабаев',amount:5800,comment:'Нарушена температура хранения',status:'approved',photo:null,iiko:'ACT-2330',owner:null},
+{id:'REQ-008',date:'24.06.2026 12:00',outlet:'Bahandi Водник',cat:'dairy',product:'Молоко 3.2%',qty:'2 л',type:'none',emp:'—',amount:null,comment:'Истёк срок годности в процессе смены',status:'approved',photo:null,iiko:'ACT-2329',owner:null},
+{id:'REQ-009',date:'23.06.2026 19:30',outlet:'Bahandi Мега SilkWay',cat:'dairy',product:'Свежие сливки',qty:'300 мл',type:'deduct',emp:'Тимур Касымов',amount:2100,comment:'Перегрет бармен-станцией',status:'rejected',photo:null,iiko:null,owner:null},
+{id:'REQ-010',date:'23.06.2026 16:00',outlet:'Bahandi Хан Шатыр',cat:'veg',product:'Авокадо',qty:'3 шт',type:'none',emp:'—',amount:null,comment:'Внешние повреждения при доставке',status:'approved',photo:null,iiko:'ACT-2327',owner:null},
+{id:'REQ-011',date:'22.06.2026 11:20',outlet:'Bahandi Сары Арка',cat:'dropped',product:'Рыба семга',qty:'800 г',type:'deduct',emp:'Карим Сейтов',amount:8900,comment:'Нарушены условия хранения',status:'pending',photo:null,iiko:null,owner:null},
+{id:'REQ-012',date:'22.06.2026 09:45',outlet:'Bahandi ЦУМ',cat:'dairy',product:'Йогурт натуральный',qty:'400 г',type:'none',emp:'—',amount:null,comment:'Вскрыта упаковка при транспортировке',status:'approved',photo:null,iiko:'ACT-2324',owner:null},
+{id:'REQ-013',date:'21.06.2026 20:10',outlet:'Bahandi Дала Молл',cat:'cooked',product:'Шоколадный соус',qty:'150 мл',type:'deduct',emp:'Гульнара Юсупова',amount:900,comment:'Уронила при раздаче',status:'rejected',photo:null,iiko:null,owner:null},
+{id:'REQ-014',date:'21.06.2026 15:30',outlet:'Bahandi Апорт',cat:'veg',product:'Перец болгарский',qty:'600 г',type:'none',emp:'—',amount:null,comment:'Часть партии не прошла контроль качества',status:'approved',photo:null,iiko:'ACT-2320',owner:null},
+{id:'REQ-015',date:'20.06.2026 10:00',outlet:'Bahandi Водник',cat:'dairy',product:'Сыр моцарелла',qty:'250 г',type:'none',emp:'—',amount:null,comment:'Просрочен, обнаружен при инвентаризации',status:'approved',photo:null,iiko:'ACT-2318',owner:null},
+];
+(function seedMore(){
+const extraOutlets=['Bahandi ЦУМ','Bahandi Мега SilkWay','Bahandi Хан Шатыр','Bahandi Сары Арка','Bahandi Апорт','Bahandi Дала Молл','Bahandi Водник','Bahandi Астана Молл','Bahandi Форум','Bahandi Север'];
+const extraProducts={veg:['Капуста','Лук','Шпинат','Редис'],cooked:['Наггетсы','Шаверма-микс','Рис гарнирный'],bread:['Тосты','Чиабатта','Круассаны'],dropped:['Стейк рибай','Суп-пюре','Тирамису'],dairy:['Масло сливочное','Творог','Сырки'],other:['Салфетки','Соломинки','Контейнеры']};
+const emps=['Карим Сейтов','Айгерим Нурова','Дина Ахметова','Ерлан Жаксыбеков','Жанат Абдуллаев','Мадина Искакова','Диана Мухамбетова','Алибек Жумабаев','Рустем Омаров','Самал Сарсенова'];
+let n=16;
+for(let i=0;i<20;i++){
+const cats=Object.keys(extraProducts);
+const cat=cats[i%cats.length];
+const plist=extraProducts[cat];
+const product=plist[i%plist.length];
+const outlet=extraOutlets[(i*3+1)%extraOutlets.length];
+const isDeduct=i%3===0;
+const day=15+((i*7)%12);
+const hour=String(8+((i*5)%12)).padStart(2,'0');
+const min=String((i*13)%60).padStart(2,'0');
+const date=`${String(day).padStart(2,'0')}.06.2026 ${hour}:${min}`;
+const statusRoll=i%5;
+const status=statusRoll===0?'pending':(statusRoll===4?'rejected':'approved');
+reqs.push({
+id:'REQ-'+String(n++).padStart(3,'0'),
+date,outlet,cat,product,
+qty:`${100+(i*37)%900} г`,
+type:isDeduct?'deduct':'none',
+emp:isDeduct?emps[i%emps.length]:'—',
+amount:isDeduct?500+((i*291)%6000):null,
+comment:'Демо-запись: '+product.toLowerCase()+' не соответствует стандарту',
+status,photo:null,
+iiko:status==='approved'?'ACT-'+(2200+i*3):null,
+owner:null
+});
+}
+})();
+</script>
+
+<script>
+function getAccounts(){try{return JSON.parse(localStorage.getItem('ctrlmoney_accounts')||'null')}catch{return null}}
+function saveAccounts(a){localStorage.setItem('ctrlmoney_accounts',JSON.stringify(a))}
+function getReqs(){try{return JSON.parse(localStorage.getItem('ctrlmoney_reqs')||'null')}catch{return null}}
+function saveReqs(){localStorage.setItem('ctrlmoney_reqs',JSON.stringify(reqs))}
+
+let accounts=getAccounts();
+if(!accounts){
+accounts=[
+{email:'staff@ctrlmoney.kz',password:'staff123',name:'Аида Ибрагимова',pos:'Кладовщик',shift:'Смена 1 (08:00–18:00)',outlet:'Bahandi ЦУМ',role:'staff'},
+{email:'checker@ctrlmoney.kz',password:'check123',name:'Максат Ахметов',pos:'Старший проверяющий',shift:'Смена 1 (08:00–18:00)',outlet:'Все точки',role:'checker'},
+];
+saveAccounts(accounts);
+}
+const savedReqs=getReqs();
+if(savedReqs&&Array.isArray(savedReqs)&&savedReqs.length){reqs.length=0;savedReqs.forEach(r=>reqs.push(r))}
+function saveSession(e){localStorage.setItem('ctrlmoney_session',e)}
+function clearSession(){localStorage.removeItem('ctrlmoney_session')}
+
+let authTab='login';
+function switchAuthTab(t){
+authTab=t;
+document.getElementById('loginTab').classList.toggle('active',t==='login');
+document.getElementById('regTab').classList.toggle('active',t==='register');
+document.getElementById('loginForm').style.display=t==='login'?'':'none';
+document.getElementById('regForm').style.display=t==='register'?'':'none';
+clearLoginError();clearRegError();
+}
+function showLoginError(msg){
+let el=document.getElementById('loginError');
+if(!el){el=document.createElement('div');el.id='loginError';el.style.cssText='background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.25);border-radius:9px;padding:11px 14px;font-size:13px;color:#ff4560;margin-bottom:14px;display:flex;align-items:center;gap:8px;';document.getElementById('loginForm').insertBefore(el,document.getElementById('loginForm').firstChild)}
+el.innerHTML=`<span style="font-size:16px">⚠️</span><span>${msg}</span>`;el.style.display='flex';el.style.animation='none';void el.offsetWidth;el.style.animation='shake .35s ease';
+}
+function clearLoginError(){const el=document.getElementById('loginError');if(el)el.style.display='none'}
+function showRegError(msg){
+let el=document.getElementById('regError');
+if(!el){el=document.createElement('div');el.id='regError';el.style.cssText='background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.25);border-radius:9px;padding:11px 14px;font-size:13px;color:#ff4560;margin-bottom:14px;display:flex;align-items:center;gap:8px;';document.getElementById('regForm').insertBefore(el,document.getElementById('regForm').firstChild)}
+el.innerHTML=`<span style="font-size:16px">⚠️</span><span>${msg}</span>`;el.style.display='flex';el.style.animation='none';void el.offsetWidth;el.style.animation='shake .35s ease';
+}
+function clearRegError(){const el=document.getElementById('regError');if(el)el.style.display='none'}
+
+function doLogin(){
+clearLoginError();
+const email=document.getElementById('liEmail').value.trim().toLowerCase();
+const pass=document.getElementById('liPass').value;
+if(!email)return showLoginError('Введите email');
+if(!pass)return showLoginError('Введите пароль');
+const acc=accounts.find(a=>a.email.toLowerCase()===email);
+if(!acc)return showLoginError('Аккаунт с таким email не найден. Перейдите на вкладку <b>Регистрация</b>.');
+if(acc.password!==pass){showLoginError('Неверный пароль.');document.getElementById('liPass').value='';document.getElementById('liPass').focus();return}
+me={...acc};role=acc.role;saveSession(me.email);bootApp();
+}
+function doRegister(){
+clearRegError();
+const first=document.getElementById('rFirst').value.trim();
+const last=document.getElementById('rLast').value.trim();
+const email=document.getElementById('rEmail').value.trim().toLowerCase();
+const pos=document.getElementById('rPos').value;
+const shift=document.getElementById('rShift').value;
+const outlet=document.getElementById('rOutlet').value;
+const rr=document.getElementById('rRole').value;
+const pass=document.getElementById('rPass').value;
+const pass2=document.getElementById('rPass2').value;
+if(!first||!last)return showRegError('Введите имя и фамилию');
+if(!email||!email.includes('@'))return showRegError('Введите корректный email');
+if(!pos)return showRegError('Выберите должность');
+if(pass.length<8)return showRegError('Пароль — не менее 8 символов');
+if(pass!==pass2)return showRegError('Пароли не совпадают');
+if(accounts.find(a=>a.email.toLowerCase()===email))return showRegError('Аккаунт с таким email уже существует.');
+const newAcc={email,password:pass,name:`${first} ${last}`,pos:pos||'Сотрудник',shift:shift||'Смена 1 (08:00–18:00)',outlet:outlet||'—',role:rr};
+accounts.push(newAcc);saveAccounts(accounts);
+me={...newAcc};role=rr;saveSession(me.email);bootApp();
+toast(`Добро пожаловать, ${first}! 🎉`,'info');
+}
+function bootApp(){
+document.getElementById('loginPage').style.display='none';
+document.getElementById('mainApp').style.display='flex';
+const ini=me.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+document.getElementById('sidebarInitials').textContent=ini;
+document.getElementById('sidebarName').textContent=me.name;
+document.getElementById('sidebarRole').textContent=me.pos;
+renderCatPicker();buildNav();navigate('dashboard');
+}
+function doLogout(){
+clearSession();
+document.getElementById('loginPage').style.display='flex';
+document.getElementById('mainApp').style.display='none';
+clearLoginError();document.getElementById('liPass').value='';
+[dashChartInst,catDonutInst,weekdayChartInst].forEach(c=>{if(c){c.destroy()}});
+dashChartInst=catDonutInst=weekdayChartInst=null;
+}
+</script>
+
+<script>
+const staffNavItems=[
+{id:'dashboard',label:'Главная',icon:'🏠'},
+{id:'new-request',label:'Новая заявка',icon:'➕'},
+{id:'my-requests',label:'Мои заявки',icon:'📋',badge:()=>myReqs().filter(r=>r.status==='pending').length||null},
+{id:'history',label:'Аналитика',icon:'📊'},
+{id:'profile',label:'Профиль',icon:'👤'},
+];
+const checkerNavItems=[
+{id:'dashboard',label:'Главная',icon:'🏠'},
+{id:'pending',label:'Ожидают проверки',icon:'⏳',badge:()=>reqs.filter(r=>r.status==='pending').length||null},
+{id:'notifications',label:'Уведомления',icon:'🔔',badge:()=>getUnreadNotifCount()||null},
+{id:'review',label:'История проверки',icon:'🔍'},
+{id:'history',label:'Аналитика',icon:'📊'},
+{id:'iiko',label:'Iiko',icon:'⚙️'},
+{id:'profile',label:'Профиль',icon:'👤'},
+];
+const pageTitles={dashboard:'Главная','new-request':'Новая заявка','my-requests':'Мои заявки',pending:'Ожидают проверки',notifications:'Уведомления',review:'История проверки',history:'Аналитика списаний',iiko:'Iiko',profile:'Профиль'};
+
+function buildNav(){
+const items=role==='staff'?staffNavItems:checkerNavItems;
+document.getElementById('sidebarNav').innerHTML=items.map(it=>{
+const b=it.badge?it.badge():null;
+return`<div class="nav-item" id="nav-${it.id}" onclick="navigate('${it.id}')">
+<span class="nav-icon">${it.icon}</span>${it.label}
+${b?`<span class="nav-badge">${b}</span>`:''}
+</div>`;
+}).join('');
+}
+
+function navigate(pg){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+const el=document.getElementById('page-'+pg);if(el)el.classList.add('active');
+document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+const nav=document.getElementById('nav-'+pg);if(nav)nav.classList.add('active');
+document.getElementById('topTitle').textContent=pageTitles[pg]||pg;
+closeSidebar();
+if(pg==='dashboard')renderDash();
+if(pg==='new-request'){resetFormSteps();prefillRequestForm();}
+if(pg==='my-requests')renderMy(myFilter);
+if(pg==='pending')renderPending();
+if(pg==='notifications')renderNotifications();
+if(pg==='review')renderRev(revFilter);
+if(pg==='history')renderHist();
+if(pg==='iiko')renderIiko();
+if(pg==='profile')renderProfile();
+}
+
+function esc(s){if(s===null||s===undefined)return '';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtAmount(a){if(!a&&a!==0)return '—';return Number(a).toLocaleString('ru-RU')+' ₸'}
+function sBadge(s){const m={pending:['На проверке','b-pending'],approved:['Одобрено','b-approved'],rejected:['Отклонено','b-rejected']};const[l,c]=m[s]||['—','b-none'];return`<span class="badge ${c}"><span class="badge-dot"></span>${l}</span>`}
+function tBadge(t){return t==='deduct'?`<span class="badge b-deduct">С удержанием</span>`:`<span class="badge b-none">Без удержания</span>`}
+function myReqs(){return reqs.filter(r=>r.owner===me.email)}
+function weekdayOf(dateStr){const[dpart]=dateStr.split(' ');const[d,m,y]=dpart.split('.').map(Number);return new Date(y,m-1,d).getDay()}
+</script>
+
+<script>
+function getChartData(mode){
+const dayOf=r=>r.date.slice(0,5);
+const allDays=[...new Set(reqs.map(dayOf))].sort();
+const last8=allDays.slice(-8);
+if(mode==='day'){
+const none=last8.map(d=>reqs.filter(r=>dayOf(r)===d&&r.type==='none').length);
+const deduct=last8.map(d=>reqs.filter(r=>dayOf(r)===d&&r.type==='deduct').length);
+return{labels:last8,none,deduct};
+} else {
+const chunkSize=3;const weeks=[];
+for(let i=0;i<last8.length;i+=chunkSize){weeks.push(last8.slice(i,i+chunkSize))}
+const labels=weeks.map((w,i)=>`Нед ${i+1}`);
+const none=weeks.map(w=>reqs.filter(r=>w.includes(dayOf(r))&&r.type==='none').length);
+const deduct=weeks.map(w=>reqs.filter(r=>w.includes(dayOf(r))&&r.type==='deduct').length);
+return{labels,none,deduct};
+}
+}
+function buildDashChart(){
+const canvas=document.getElementById('dashChart');if(!canvas)return;
+const d=getChartData(chartMode);
+if(dashChartInst){dashChartInst.destroy()}
+dashChartInst=new Chart(canvas,{
+type:'line',
+data:{labels:d.labels,datasets:[
+{label:'Без удержания',data:d.none,borderColor:'#ff6a1a',backgroundColor:'rgba(255,106,26,.12)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#ff6a1a',borderWidth:2},
+{label:'С удержанием',data:d.deduct,borderColor:'#ff4560',backgroundColor:'rgba(255,69,96,.1)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#ff4560',borderWidth:2}
+]},
+options:{
+responsive:true,maintainAspectRatio:false,
+animation:{duration:700,easing:'easeOutQuart'},
+interaction:{mode:'index',intersect:false},
+plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y} шт`}}},
+scales:{
+x:{grid:{display:false},ticks:{color:'#44445a',font:{size:11}},border:{color:'rgba(255,255,255,.06)'}},
+y:{beginAtZero:true,ticks:{color:'#44445a',stepSize:1,font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{display:false}}
+}
+}
+});
+}
+function switchChartMode(m){
+chartMode=m;
+document.getElementById('ctab-day').classList.toggle('active',m==='day');
+document.getElementById('ctab-week').classList.toggle('active',m==='week');
+buildDashChart();
+}
+function buildCatDonut(){
+const canvas=document.getElementById('catDonut');if(!canvas)return;
+const counts=CATEGORIES.map(c=>reqs.filter(r=>r.cat===c.id).length);
+const total=counts.reduce((a,b)=>a+b,0);
+document.getElementById('donutTotal').textContent=total;
+if(catDonutInst){catDonutInst.destroy()}
+catDonutInst=new Chart(canvas,{
+type:'doughnut',
+data:{labels:CATEGORIES.map(c=>c.label),datasets:[{data:counts,backgroundColor:CATEGORIES.map(c=>c.color),borderColor:'#12121a',borderWidth:3,hoverOffset:6}]},
+options:{responsive:true,maintainAspectRatio:false,cutout:'72%',animation:{duration:800},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed} (${total?Math.round(ctx.parsed/total*100):0}%)`}}}}
+});
+document.getElementById('catLegend').innerHTML=CATEGORIES.map((c,i)=>`
+<div class="cat-legend-row">
+<span class="cat-legend-dot" style="background:${c.color}"></span>
+<span class="cat-legend-name">${c.icon} ${c.label}</span>
+<span class="cat-legend-val">${counts[i]}</span>
+</div>`).join('');
+}
+function buildOutletRank(){
+const el=document.getElementById('outletRank');if(!el)return;
+const byOutlet={};
+reqs.forEach(r=>{byOutlet[r.outlet]=(byOutlet[r.outlet]||0)+1});
+const ranked=Object.entries(byOutlet).sort((a,b)=>b[1]-a[1]).slice(0,6);
+const max=ranked.length?ranked[0][1]:1;
+el.innerHTML=ranked.map((r,i)=>`
+<div class="rank-row">
+<div class="rank-num">${i+1}</div>
+<div class="rank-info">
+<div class="rank-name">${esc(r[0])}</div>
+<div class="rank-bar-track"><div class="rank-bar-fill" id="rankbar-${i}" style="width:0"></div></div>
+</div>
+<div class="rank-val">${r[1]}</div>
+</div>`).join('');
+setTimeout(()=>{ranked.forEach((r,i)=>{const bar=document.getElementById('rankbar-'+i);if(bar)bar.style.width=(r[1]/max*100)+'%';});},50);
+}
+function buildWeekdayChart(){
+const canvas=document.getElementById('weekdayChart');if(!canvas)return;
+const names=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+const counts=[0,0,0,0,0,0,0];
+reqs.forEach(r=>{try{counts[weekdayOf(r.date)]++}catch(e){}});
+const order=[1,2,3,4,5,6,0];
+const labels=order.map(i=>names[i]);
+const data=order.map(i=>counts[i]);
+if(weekdayChartInst){weekdayChartInst.destroy()}
+weekdayChartInst=new Chart(canvas,{
+type:'bar',
+data:{labels,datasets:[{data,backgroundColor:data.map(v=>v===Math.max(...data)?'rgba(255,106,26,.9)':'rgba(36,36,56,.8)'),borderRadius:6}]},
+options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y} заявок`}}},scales:{x:{grid:{display:false},ticks:{color:'#8888a8',font:{size:11}},border:{color:'rgba(255,255,255,.06)'}},y:{beginAtZero:true,ticks:{color:'#8888a8',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{display:false}}}}
+});
+}
+function buildCityHeat(){
+const el=document.getElementById('cityHeat');if(!el)return;
+const byCity={};
+CITIES.forEach(c=>byCity[c]=0);
+reqs.forEach(r=>{const c=cityOf(r.outlet);if(c)byCity[c]=(byCity[c]||0)+1});
+const max=Math.max(1,...Object.values(byCity));
+el.innerHTML=Object.entries(byCity).map(([city,count])=>{
+const intensity=count/max;
+const alpha=0.12+intensity*0.85;
+return`<div class="heat-cell" style="background:rgba(255,106,26,${alpha.toFixed(2)})" title="${esc(city)}: ${count} заявок">${count}</div>`;
+}).join('');
+}
+</script>
+
+<script>
+function renderDash(){
+const tot=reqs.length;
+const pend=reqs.filter(r=>r.status==='pending').length;
+const appr=reqs.filter(r=>r.status==='approved').length;
+const rej=reqs.filter(r=>r.status==='rejected').length;
+document.getElementById('statsGrid').innerHTML=`
+<div class="stat" style="animation-delay:.02s"><div class="stat-label">Всего заявок</div><div class="stat-val">${tot}</div><div class="stat-sub">по всей сети</div></div>
+<div class="stat" style="animation-delay:.07s"><div class="stat-label">На проверке</div><div class="stat-val c-yellow">${pend}</div><div class="stat-sub">ожидают решения</div></div>
+<div class="stat" style="animation-delay:.12s"><div class="stat-label">Одобрено</div><div class="stat-val c-green">${appr}</div><div class="stat-sub">передано в Iiko</div></div>
+<div class="stat" style="animation-delay:.17s"><div class="stat-label">Отклонено</div><div class="stat-val c-red">${rej}</div><div class="stat-sub">требуют разбора</div></div>
+`;
+setTimeout(buildDashChart,0);
+const myPend=myReqs().filter(r=>r.status==='pending').length;
+const links=role==='staff'?[
+{pg:'new-request',icon:'➕',title:'Новая заявка',sub:'Оформить списание'},
+{pg:'my-requests',icon:'📋',title:'Мои заявки',sub:`${myPend} на проверке`},
+]:[
+{pg:'pending',icon:'⏳',title:'Ожидают проверки',sub:`${pend} заявок`},
+{pg:'review',icon:'🔍',title:'История проверки',sub:`${tot} всего`},
+];
+document.getElementById('quickLinks').innerHTML=links.map(l=>`
+<div class="quick-link" onclick="navigate('${l.pg}')">
+<div class="quick-link-icon">${l.icon}</div>
+<div><div class="quick-link-title">${l.title}</div><div class="quick-link-sub">${l.sub}</div></div>
+</div>`).join('');
+}
+
+function renderMy(f){
+myFilter=f;
+const base=myReqs();
+const rows=f==='all'?base:base.filter(r=>r.status===f);
+const pend=base.filter(r=>r.status==='pending').length;
+const appr=base.filter(r=>r.status==='approved').length;
+const rej=base.filter(r=>r.status==='rejected').length;
+document.getElementById('myMiniStats').innerHTML=`
+<div class="mini-stats">
+<div class="mini-stat"><div class="mini-stat-label">Всего</div><div class="mini-stat-val">${base.length}</div></div>
+<div class="mini-stat"><div class="mini-stat-label">На проверке</div><div class="mini-stat-val c-yellow">${pend}</div></div>
+<div class="mini-stat"><div class="mini-stat-label">Одобрено</div><div class="mini-stat-val c-green">${appr}</div></div>
+<div class="mini-stat"><div class="mini-stat-label">Отклонено</div><div class="mini-stat-val c-red">${rej}</div></div>
+</div>`;
+renderTable('myTable',rows,false);
+}
+function renderPending(){
+let rows=reqs.filter(r=>r.status==='pending');
+if(pendingCity)rows=rows.filter(r=>cityOf(r.outlet)===pendingCity);
+renderTable('pendingTable',rows,true);
+}
+function filterPendingCity(c){pendingCity=c;renderPending()}
+function renderRev(f){
+revFilter=f;
+let rows=f==='all'?reqs:reqs.filter(r=>r.status===f);
+if(revCity)rows=rows.filter(r=>cityOf(r.outlet)===revCity);
+renderTable('revTable',rows,true);
+}
+function filterRevCity(c){revCity=c;renderRev(revFilter)}
+
+function renderHist(){
+const tot=reqs.filter(r=>r.status!=='rejected').length;
+const totDeduct=reqs.filter(r=>r.type==='deduct'&&r.status!=='rejected').length;
+const totSum=reqs.filter(r=>r.type==='deduct'&&r.amount&&r.status!=='rejected').reduce((s,r)=>s+Number(r.amount),0);
+document.getElementById('anlStatsGrid').innerHTML=`
+<div class="stat" style="animation-delay:.02s"><div class="stat-label">Всего списаний</div><div class="stat-val">${tot}</div><div class="stat-sub">без учёта отклонённых</div></div>
+<div class="stat" style="animation-delay:.07s"><div class="stat-label">С удержанием</div><div class="stat-val c-red">${totDeduct}</div><div class="stat-sub">${tot?Math.round(totDeduct/tot*100):0}% от всех</div></div>
+<div class="stat" style="animation-delay:.12s"><div class="stat-label">Сумма удержаний</div><div class="stat-val c-yellow" style="font-size:22px">${totSum.toLocaleString('ru-RU')} ₸</div><div class="stat-sub">накоплено по сети</div></div>
+`;
+setTimeout(()=>{buildOutletRank();},0);
+let rows=reqs;
+if(histFilter!=='all')rows=rows.filter(r=>r.type===histFilter);
+if(histCat)rows=rows.filter(r=>r.cat===histCat);
+if(histCity)rows=rows.filter(r=>cityOf(r.outlet)===histCity);
+if(histSearch)rows=rows.filter(r=>r.product.toLowerCase().includes(histSearch)||r.outlet.toLowerCase().includes(histSearch)||r.id.toLowerCase().includes(histSearch));
+renderTable('histTable',rows,false);
+}
+function filterHistCity(c){histCity=c;renderHist()}
+function filterHistCat(c){histCat=c;renderHist()}
+function filterHist(f,el){histFilter=f;document.querySelectorAll('#histFilters .ftab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderHist()}
+function searchHist(v){histSearch=v.toLowerCase();renderHist()}
+function exportHistCSV(){
+let rows=reqs;
+if(histFilter!=='all')rows=rows.filter(r=>r.type===histFilter);
+if(histCat)rows=rows.filter(r=>r.cat===histCat);
+if(histCity)rows=rows.filter(r=>cityOf(r.outlet)===histCity);
+if(histSearch)rows=rows.filter(r=>r.product.toLowerCase().includes(histSearch)||r.outlet.toLowerCase().includes(histSearch)||r.id.toLowerCase().includes(histSearch));
+const header=['ID','Дата','Точка','Категория','Продукт','Количество','Тип','Сотрудник','Сумма','Статус','Акт Iiko','Комментарий'];
+const lines=[header.join(';')];
+rows.forEach(r=>{
+lines.push([r.id,r.date,r.outlet,catInfo(r.cat).label,r.product,r.qty,r.type==='deduct'?'С удержанием':'Без удержания',r.emp,r.amount||'',r.status,r.iiko||'','"'+(r.comment||'').replace(/"/g,'""')+'"'].join(';'));
+});
+const csv='\uFEFF'+lines.join('\n');
+const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');
+a.href=url;a.download='ctrlmoney_export.csv';
+document.body.appendChild(a);a.click();document.body.removeChild(a);
+URL.revokeObjectURL(url);
+toast('CSV-файл экспортирован','success');
+}
+function renderIiko(){
+const rows=reqs.filter(r=>r.status==='approved');
+const totalSynced=rows.filter(r=>r.iiko).length;
+const totalDeductSum=rows.filter(r=>r.type==='deduct'&&r.amount).reduce((s,r)=>s+Number(r.amount),0);
+document.getElementById('iikoStats').innerHTML=`
+<div class="stat"><div class="stat-label">Передано актов</div><div class="stat-val c-green">${totalSynced}</div><div class="stat-sub">одобренных</div></div>
+<div class="stat"><div class="stat-label">Сумма удержаний</div><div class="stat-val c-red" style="font-size:20px">${totalDeductSum.toLocaleString('ru-RU')} ₸</div><div class="stat-sub">передано в Iiko</div></div>
+<div class="stat"><div class="stat-label">Синхронизация</div><div class="stat-val" style="font-size:18px">только что</div><div class="stat-sub">авто каждые 5 мин</div></div>
+`;
+if(!rows.length){document.getElementById('iikoTable').innerHTML=`<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">Нет актов</div></div>`;return}
+document.getElementById('iikoTable').innerHTML=`<table><thead><tr>
+<th>ID заявки</th><th>Акт Iiko</th><th>Категория</th><th>Продукт</th><th>Точка</th><th>Удержание</th><th>Дата</th>
+</tr></thead><tbody>
+${rows.map(r=>`<tr>
+<td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${esc(r.id)}</span></td>
+<td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${esc(r.iiko||'—')}</span></td>
+<td>${catChip(r.cat)}</td>
+<td style="font-weight:600">${esc(r.product)}</td>
+<td style="font-size:12px;color:var(--muted)">${esc(r.outlet)}</td>
+<td>${r.amount?`<span style="color:var(--red);font-weight:500">${Number(r.amount).toLocaleString('ru-RU')} ₸</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+<td style="font-size:11px;color:var(--muted)">${esc(r.date)}</td>
+</tr>`).join('')}
+</tbody></table>`;
+}
+</script>
+
+<script>
+function renderTable(id,rows,actions){
+const el=document.getElementById(id);
+if(!rows.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Заявок нет</div><div class="empty-text">Здесь появятся заявки</div></div>`;return}
+el.innerHTML=`<table><thead><tr>
+<th>ID</th><th>Дата</th><th>Точка</th><th>Категория</th><th>Продукт</th><th>Тип</th><th>Удержание</th><th>Статус</th><th></th>
+</tr></thead><tbody>
+${rows.map((r,idx)=>`<tr style="animation-delay:${Math.min(idx*0.025,.4)}s">
+<td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${esc(r.id)}</span></td>
+<td style="color:var(--muted);font-size:11px;white-space:nowrap">${esc(r.date)}</td>
+<td style="font-size:12px">${esc(r.outlet)}</td>
+<td>${catChip(r.cat)}</td>
+<td><div style="font-weight:600;font-size:13px">${esc(r.product)}</div><div style="font-size:11px;color:var(--muted)">${esc(r.qty)}</div></td>
+<td>${tBadge(r.type)}</td>
+<td>${r.amount?`<span style="color:var(--red);font-weight:500;font-size:12px">${Number(r.amount).toLocaleString('ru-RU')} ₸</span>`:`<span style="color:var(--subtle);font-size:12px">—</span>`}</td>
+<td>${sBadge(r.status)}</td>
+<td>
+<div style="display:flex;gap:6px">
+<button class="btn btn-ghost btn-sm" onclick="viewReq('${r.id}')">Детали</button>
+${actions&&r.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveR('${r.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="rejectR('${r.id}')">✕</button>`:''}
+</div>
+</td>
+</tr>`).join('')}
+</tbody></table>`;
+}
+
+function resetFormSteps(){
+document.getElementById('step-1').className='step-pill';
+document.getElementById('step-2').className='step-pill';
+document.getElementById('step-3').className='step-pill';
+document.getElementById('step-4').className='step-pill';
+}
+function selType(t){
+selTypeVal=t;
+document.getElementById('opt-none').classList.toggle('sel',t==='none');
+document.getElementById('opt-deduct').classList.toggle('sel',t==='deduct');
+document.getElementById('empSection').style.display=t==='deduct'?'block':'none';
+document.getElementById('step-3').className='step-pill done';
+}
+function prefillRequestForm(){
+const sel=document.getElementById('fOutlet');
+if(!sel||!me.outlet||me.outlet==='—'||me.outlet==='Все точки')return;
+const has=[...sel.options].some(o=>o.value===me.outlet);
+if(has)sel.value=me.outlet;
+}
+function handlePhoto(input){
+const file=input.files[0];if(!file)return;
+const r=new FileReader();
+r.onload=e=>{
+photoUrl=e.target.result;
+document.getElementById('previewImg').src=photoUrl;
+document.getElementById('previewWrap').style.display='block';
+document.getElementById('uploadArea').style.display='none';
+document.getElementById('step-1').className='step-pill done';
+};
+r.readAsDataURL(file);
+}
+function rmPhoto(e){
+e.stopPropagation();photoUrl=null;
+document.getElementById('previewWrap').style.display='none';
+document.getElementById('uploadArea').style.display='block';
+document.getElementById('photoIn').value='';
+document.getElementById('step-1').className='step-pill';
+}
+
+function onDragOver(e){e.preventDefault();document.getElementById('uploadArea').classList.add('drag-over')}
+function onDragLeave(e){document.getElementById('uploadArea').classList.remove('drag-over')}
+function onDrop(e){
+e.preventDefault();
+document.getElementById('uploadArea').classList.remove('drag-over');
+const file=e.dataTransfer.files[0];
+if(file&&file.type.startsWith('image/')){
+const r=new FileReader();
+r.onload=ev=>{
+photoUrl=ev.target.result;
+document.getElementById('previewImg').src=photoUrl;
+document.getElementById('previewWrap').style.display='block';
+document.getElementById('uploadArea').style.display='none';
+document.getElementById('step-1').className='step-pill done';
+};
+r.readAsDataURL(file);
+}
+}
+
+function updateCC(){
+const len=document.getElementById('fComment').value.length;
+const el=document.getElementById('cc');
+el.textContent=`${len} символов${len>=10?' ✓':' (минимум 10)'}`;
+el.className='cc'+(len>=10?' ok':'');
+document.getElementById('step-4').className='step-pill'+(len>=10?' done':'');
+}
+
+function submitReq(){
+const outlet=document.getElementById('fOutlet').value;
+const product=document.getElementById('fProduct').value.trim();
+const qty=document.getElementById('fQty').value.trim();
+const comment=document.getElementById('fComment').value.trim();
+
+if(!photoUrl){
+toast('📷 Прикрепите фото — это обязательно','error');
+document.getElementById('uploadArea').scrollIntoView({behavior:'smooth',block:'center'});
+const ua=document.getElementById('uploadArea');
+ua.style.borderColor='var(--red)';
+ua.style.background='rgba(255,69,96,.06)';
+setTimeout(()=>{ua.style.borderColor='';ua.style.background='';},2000);
+document.getElementById('step-1').className='step-pill cur';
+return;
+}
+
+if(!catVal)return toast('Выберите категорию списания','error');
+if(!outlet)return toast('Выберите торговую точку','error');
+if(!product)return toast('Укажите продукт','error');
+if(!qty)return toast('Укажите количество','error');
+if(!selTypeVal)return toast('Выберите тип списания','error');
+if(selTypeVal==='deduct'&&!document.getElementById('fEmp').value)return toast('Выберите сотрудника','error');
+let amount=null;
+if(selTypeVal==='deduct'){
+const rawAmt=document.getElementById('fAmount').value;
+if(!rawAmt||Number(rawAmt)<=0)return toast('Укажите сумму удержания','error');
+amount=Number(rawAmt);
+}
+if(comment.length<10)return toast('Комментарий слишком короткий (минимум 10 символов)','error');
+
+document.getElementById('step-2').className='step-pill done';
+const nr={
+id:'REQ-'+(reqs.length+1).toString().padStart(3,'0'),
+date:new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',',''),
+outlet,cat:catVal,product,qty,type:selTypeVal,
+emp:selTypeVal==='deduct'?document.getElementById('fEmp').value:'—',
+amount,comment,status:'pending',photo:photoUrl,iiko:null,owner:me.email
+};
+reqs.unshift(nr);saveReqs();
+addNotif({icon:'🆕',title:'Новая заявка на проверку',text:`${nr.id} · ${nr.product} · ${nr.outlet}`,reqId:nr.id});
+['fOutlet','fProduct','fQty','fComment','fEmp','fAmount'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+selTypeVal=null;photoUrl=null;catVal=null;
+document.getElementById('opt-none').classList.remove('sel');
+document.getElementById('opt-deduct').classList.remove('sel');
+CATEGORIES.forEach(c=>{const el=document.getElementById('catc-'+c.id);if(el)el.classList.remove('sel')});
+document.getElementById('empSection').style.display='none';
+document.getElementById('previewWrap').style.display='none';
+document.getElementById('uploadArea').style.display='block';
+document.getElementById('cc').textContent='0 символов';
+document.getElementById('cc').className='cc';
+resetFormSteps();buildNav();
+toast('✅ Заявка отправлена на проверку!','success');
+navigate('my-requests');
+}
+</script>
+
+<script>
+function viewReq(id){
+const r=reqs.find(x=>x.id===id);if(!r)return;
+const isC=role==='checker';
+document.getElementById('modalBody').innerHTML=`
+${r.photo?`<div class="photo-box"><img src="${r.photo}" alt="Фото списания"/></div>`:`<div class="no-photo">📷 Фото не прикреплено (демо-данные)</div>`}
+<div class="dg">
+<div><div class="dl">ID</div><div class="dv" style="font-family:'JetBrains Mono',monospace">${esc(r.id)}</div></div>
+<div><div class="dl">Дата</div><div class="dv">${esc(r.date)}</div></div>
+<div><div class="dl">Точка</div><div class="dv" style="font-size:12px">${esc(r.outlet)}</div></div>
+<div><div class="dl">Статус</div><div class="dv">${sBadge(r.status)}</div></div>
+<div><div class="dl">Категория</div><div class="dv">${catChip(r.cat)}</div></div>
+<div><div class="dl">Продукт</div><div class="dv">${esc(r.product)}</div></div>
+<div><div class="dl">Количество</div><div class="dv">${esc(r.qty)}</div></div>
+<div><div class="dl">Тип</div><div class="dv">${tBadge(r.type)}</div></div>
+<div><div class="dl">Сотрудник</div><div class="dv" style="font-size:12px">${esc(r.emp)}</div></div>
+${r.amount?`<div><div class="dl">Удержание</div><div class="dv" style="color:var(--red);font-weight:600">${Number(r.amount).toLocaleString('ru-RU')} ₸</div></div>`:''}
+${r.iiko?`<div><div class="dl">Акт Iiko</div><div class="dv" style="font-family:'JetBrains Mono',monospace;color:var(--green)">${esc(r.iiko)}</div></div>`:''}
+</div>
+<div style="margin-bottom:6px"><div class="dl">Комментарий</div></div>
+<div class="cbox">${esc(r.comment)}</div>
+`;
+document.getElementById('modalFoot').innerHTML=`
+<button class="btn btn-ghost btn-md" onclick="closeModal()">Закрыть</button>
+${isC&&r.status==='pending'?`
+<button class="btn btn-danger btn-md" onclick="rejectR('${r.id}');closeModal()">Отклонить</button>
+<button class="btn btn-success btn-md" onclick="approveR('${r.id}');closeModal()">Одобрить → Iiko</button>
+`:''}
+`;
+document.getElementById('detailModal').classList.add('open');
+}
+function closeModal(){document.getElementById('detailModal').classList.remove('open')}
+
+function approveR(id){
+const r=reqs.find(x=>x.id===id);if(!r)return;
+r.status='approved';r.iiko='ACT-'+(2340+Math.floor(Math.random()*300));
+saveReqs();buildNav();renderPending();renderRev(revFilter);renderDash();
+const amtStr=r.amount?` · Удержание: ${Number(r.amount).toLocaleString('ru-RU')} ₸`:'';
+toast(`${id} одобрена. Акт ${r.iiko} в Iiko ✓${amtStr}`,'success');
+}
+function rejectR(id){
+const r=reqs.find(x=>x.id===id);if(!r)return;
+r.status='rejected';
+saveReqs();buildNav();renderPending();renderRev(revFilter);renderDash();
+toast(`${id} отклонена`,'error');
+}
+
+function toast(msg,type='info'){
+const icons={success:'✅',error:'❌',info:'💬'};
+const el=document.createElement('div');
+el.className=`toast toast-${type}`;
+el.innerHTML=`<span>${icons[type]||'💬'}</span><span>${esc(msg)}</span>`;
+document.getElementById('toastWrap').appendChild(el);
+setTimeout(()=>{el.style.animation='toastOut .3s ease forwards';setTimeout(()=>el.remove(),300)},4500);
+}
+
+function openSidebar(){
+document.getElementById('sidebar').classList.add('open');
+document.getElementById('overlayBg').classList.add('open');
+}
+function closeSidebar(){
+document.getElementById('sidebar').classList.remove('open');
+document.getElementById('overlayBg').classList.remove('open');
+}
+</script>
+
+<script>
+// ══════════════════════════════════════
+// NOTIFICATIONS (replaces bell icon)
+// ══════════════════════════════════════
+function getNotifs(){try{return JSON.parse(localStorage.getItem('ctrlmoney_notifs')||'null')}catch{return null}}
+function saveNotifs(n){localStorage.setItem('ctrlmoney_notifs',JSON.stringify(n))}
+let notifs=getNotifs();
+if(!notifs){
+notifs=reqs.filter(r=>r.status==='pending').slice(0,5).map(r=>({
+id:'N-'+r.id,icon:'🆕',title:'Заявка ожидает проверки',text:`${r.id} · ${r.product} · ${r.outlet}`,
+reqId:r.id,time:r.date,read:false
+}));
+saveNotifs(notifs);
+}
+function addNotif(n){
+notifs.unshift({id:'N-'+Date.now(),time:new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),read:false,...n});
+notifs=notifs.slice(0,50);
+saveNotifs(notifs);
+buildNav();
+}
+function getUnreadNotifCount(){return notifs.filter(n=>!n.read).length}
+function renderNotifications(){
+const el=document.getElementById('notifList');if(!el)return;
+if(!notifs.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">Нет уведомлений</div><div class="empty-text">Здесь появятся новые заявки и события</div></div>`;return}
+el.innerHTML=notifs.map((n,i)=>`
+<div class="notif-item ${n.read?'':'unread'}" style="animation-delay:${Math.min(i*0.03,.3)}s" onclick="openNotif('${n.id}')">
+<div class="notif-icon">${n.icon||'🔔'}</div>
+<div class="notif-body">
+<div class="notif-title">${esc(n.title)}</div>
+<div class="notif-text">${esc(n.text)}</div>
+<div class="notif-time">${esc(n.time)}</div>
+</div>
+${n.read?'':'<div class="notif-unread-dot"></div>'}
+</div>`).join('');
+}
+function openNotif(id){
+const n=notifs.find(x=>x.id===id);if(!n)return;
+n.read=true;saveNotifs(notifs);buildNav();renderNotifications();
+if(n.reqId)viewReq(n.reqId);
+}
+function markAllNotifRead(){
+notifs.forEach(n=>n.read=true);
+saveNotifs(notifs);buildNav();renderNotifications();
+toast('Все уведомления отмечены как прочитанные','info');
+}
+</script>
+
+<script>
+function renderProfile(){
+const ini=me.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const base=myReqs();
+const appr=base.filter(r=>r.status==='approved').length;
+const pend=base.filter(r=>r.status==='pending').length;
+document.getElementById('profileContent').innerHTML=`
+<div class="profile-hero">
+<div class="profile-avatar-big">${esc(ini)}</div>
+<div style="flex:1">
+<div class="profile-name">${esc(me.name)}</div>
+<div class="profile-meta">${esc(me.pos)} · ${esc(me.shift||'—')}</div>
+<div class="profile-meta" style="margin-top:2px">${esc(me.outlet||'—')}</div>
+<div class="profile-stats">
+<div class="ps"><div class="ps-val">${base.length}</div><div class="ps-label">Заявок</div></div>
+<div class="ps"><div class="ps-val">${appr}</div><div class="ps-label">Одобрено</div></div>
+<div class="ps"><div class="ps-val">${pend}</div><div class="ps-label">На проверке</div></div>
+</div>
+</div>
+</div>
+<div class="profile-form">
+<div class="form-section-title" style="margin-bottom:16px">Личные данные</div>
+<div class="frow">
+<div class="fgroup"><label class="flabel">Имя</label><input type="text" value="${esc(me.name.split(' ')[0]||'')}" id="pFirst"/></div>
+<div class="fgroup"><label class="flabel">Фамилия</label><input type="text" value="${esc(me.name.split(' ')[1]||'')}" id="pLast"/></div>
+</div>
+<div class="fgroup"><label class="flabel">Email</label><input type="email" value="${esc(me.email)}" id="pEmail"/></div>
+<div class="frow">
+<div class="fgroup"><label class="flabel">Должность</label><select id="pPos">${positionOptionsHTML(me.pos)}</select></div>
+<div class="fgroup"><label class="flabel">Смена</label>
+<select id="pShift">
+<option${me.shift==='Смена 1 (08:00–18:00)'?' selected':''}>Смена 1 (08:00–18:00)</option>
+<option${me.shift==='Смена 2 (18:00–04:00)'?' selected':''}>Смена 2 (18:00–04:00)</option>
+</select>
+</div>
+</div>
+<div class="fgroup"><label class="flabel">Торговая точка</label><select id="pOutlet">${outletOptionsHTML(me.outlet,true)}</select></div>
+<button class="btn btn-primary btn-md" style="margin-top:4px" onclick="saveProfile()">Сохранить изменения</button>
+</div>
+<div class="profile-form">
+<div class="form-section-title" style="margin-bottom:16px">Смена пароля</div>
+<div class="fgroup"><label class="flabel">Новый пароль</label><input type="password" id="pPass" placeholder="Не менее 8 символов"/></div>
+<button class="btn btn-ghost btn-md" onclick="savePass()">Обновить пароль</button>
+</div>
+`;
+}
+function saveProfile(){
+const first=document.getElementById('pFirst').value.trim();
+const last=document.getElementById('pLast').value.trim();
+const email=document.getElementById('pEmail').value.trim();
+if(!first||!last)return toast('Введите имя и фамилию','error');
+const oldEmail=me.email;
+if(email!==oldEmail&&accounts.find(a=>a.email.toLowerCase()===email.toLowerCase()))return toast('Этот email уже используется','error');
+me.name=`${first} ${last}`;me.email=email;me.pos=document.getElementById('pPos').value;me.shift=document.getElementById('pShift').value;me.outlet=document.getElementById('pOutlet').value;
+if(oldEmail!==email){reqs.forEach(r=>{if(r.owner===oldEmail)r.owner=email});saveReqs()}
+const idx=accounts.findIndex(a=>a.email===oldEmail);
+if(idx>-1){accounts[idx]={...accounts[idx],...me};saveAccounts(accounts)}
+saveSession(email);
+const ini=me.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+document.getElementById('sidebarInitials').textContent=ini;
+document.getElementById('sidebarName').textContent=me.name;
+document.getElementById('sidebarRole').textContent=me.pos;
+toast('Профиль обновлён','success');renderProfile();
+}
+function savePass(){
+const p=document.getElementById('pPass').value;
+if(p.length<8)return toast('Пароль — не менее 8 символов','error');
+const idx=accounts.findIndex(a=>a.email===me.email);
+if(idx>-1){accounts[idx].password=p;saveAccounts(accounts)}
+toast('Пароль обновлён','success');document.getElementById('pPass').value='';
+}
+
+function filterMy(f,el){myFilter=f;document.querySelectorAll('#page-my-requests .ftab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderMy(f)}
+function filterRev(f,el){revFilter=f;document.querySelectorAll('#revFilters .ftab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderRev(f)}
+
+populateOutletSelects();
+populatePositionSelects();
+populateCitySelects();
+renderCatPicker();
+
+(function tryRestoreSession(){
+const savedEmail=localStorage.getItem('ctrlmoney_session');
+if(!savedEmail)return;
+const acc=accounts.find(a=>a.email===savedEmail);
+if(!acc){clearSession();return}
+me={...acc};role=acc.role;bootApp();
+})();
+</script>
+</body>
+</html>
